@@ -18,26 +18,28 @@ import mpl_toolkits.mplot3d as p3d
 
 import torch
 
-root_dir = pathlib.Path(__file__).parent.resolve()
-output_dir = os.path.join(root_dir, 'output', 'deforming_plate')
-all_subdirs = [os.path.join(output_dir, d) for d in os.listdir(output_dir) if
-               os.path.isdir(os.path.join(output_dir, d))]
-latest_subdir = max(all_subdirs, key=os.path.getmtime)
-rollout_path = os.path.join(latest_subdir, 'rollout', 'rollout.pkl')
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('path_prefix', 'output/deforming_plate')
+flags.DEFINE_string('rollout_path')
 
 
 def main(unused_argv):
-    path_prefix = 'E:\\meshgraphnets\\output\\deforming_plate\\'
+    path_prefix = FLAGS.path_prefix
     path_suffix = 'rollout\\rollout.pkl'
-    rollout_paths = ['Sat-Feb-19-15-44-13-2022']
-    # path_prefix = '/home/kit/anthropomatik/sn2444/meshgraphnets/output/deforming_plate/'
-    # rollout_paths = ['Mon-Jan-31-05-04-38-2022/2', 'Mon-Jan-31-05-10-30-2022/2', 'Mon-Jan-31-05-20-38-2022/2', 'Mon-Jan-31-05-35-42-2022/2', 'Mon-Jan-31-05-39-05-2022/2', 'Mon-Jan-31-08-28-21-2022/2']
+
+    if not FLAGS.rollout_path:
+        rollout_paths = [d.name for d in os.scandir(path_prefix) if d.is_dir()]
+    else:
+        rollout_paths = [FLAGS.rollout_path]
+      
     for rollout_path in rollout_paths:
         run_path = os.path.join(path_prefix, rollout_path)
         all_subdirs = [os.path.join(run_path, d) for d in os.listdir(run_path) if
                        os.path.isdir(os.path.join(run_path, d))]
         save_path = max(all_subdirs, key=os.path.getmtime)
-        data_path = os.path.join(path_prefix, save_path, path_suffix)
+        data_path = os.path.join(save_path, path_suffix)
         print("Ploting run", save_path)
         with open(data_path, 'rb') as fp:
             rollout_data = pickle.load(fp)
