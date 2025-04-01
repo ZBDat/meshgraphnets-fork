@@ -8,7 +8,7 @@ import pathlib
 from absl import app
 from absl import flags
 
-from matplotlib import animation
+from matplotlib import animation, cm
 import matplotlib.pyplot as plt
 
 import math
@@ -19,15 +19,16 @@ import mpl_toolkits.mplot3d as p3d
 import torch
 
 
+os.environ['KMP_DUPLICATE_LIB_OK']='TRUE'
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('path_prefix', 'output/deforming_plate')
-flags.DEFINE_string('rollout_path')
+flags.DEFINE_string('path_prefix', 'output/deforming_plate', 'root dir to the output files relative to this script.')
+flags.DEFINE_string('rollout_path', None, 'specific rollout path to plot. Will plot all if set to None.')
 
 
 def main(unused_argv):
     path_prefix = FLAGS.path_prefix
-    path_suffix = 'rollout\\rollout.pkl'
+    path_suffix = 'rollout.pkl'
 
     if not FLAGS.rollout_path:
         rollout_paths = [d.name for d in os.scandir(path_prefix) if d.is_dir()]
@@ -85,17 +86,17 @@ def main(unused_argv):
             original_pos = torch.squeeze(rollout_data[traj]['gt_pos'], dim=0)[step].to('cpu')
 
             faces = torch.squeeze(rollout_data[traj]['faces'], dim=0)[step].to('cpu')
-
-            ax_origin.plot_trisurf(original_pos[:, 0], original_pos[:, 1], faces, original_pos[:, 2], shade=True, alpha=0.3)
-            ax_pred.plot_trisurf(pos[:, 0], pos[:, 1], faces, pos[:, 2], shade=True, alpha=0.3)
+            ax_origin.plot_trisurf(original_pos[:, 0], original_pos[:, 1], faces, original_pos[:, 2], shade=False, alpha=0.3)
+            ax_pred.plot_trisurf(pos[:, 0], pos[:, 1], faces, pos[:, 2], shade=False, alpha=0.3)
 
             ax_origin.set_title('ORIGIN Trajectory %d Step %d' % (traj, step))
             ax_pred.set_title('PRED Trajectory %d Step %d' % (traj, step))
             return fig,
 
         anima = animation.FuncAnimation(fig, animate, frames=math.floor(num_frames * 10), interval=100)
-        # writervideo = animation.FFMpegWriter(fps=30)
-        # anima.save(os.path.join(save_path, 'ani.mp4'), writer=writervideo)
+        writervideo = animation.PillowWriter(fps=30)
+        anima.save(os.path.join(save_path, 'ani.gif'), writer=writervideo)
+
         plt.show(block=True)
 
 
